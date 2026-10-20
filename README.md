@@ -1,8 +1,8 @@
 <div align="center">
   <img
-    src="assets/lucius-code-portrait-banner.jpg"
-    alt="Naveen Ganesh's code-carved portrait and the inscription Peace in Our Time."
-    width="100%"
+    src="assets/lucius-code-portrait-animated.gif"
+    alt="Naveen Ganesh — a code-carved portrait with PEACE IN OUR TIME, cyan and violet terminal details, and restrained red glitch effects."
+    width="92%"
   />
 </div>
 
