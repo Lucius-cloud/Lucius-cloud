@@ -1,10 +1,15 @@
 <div align="center">
   <img
     src="assets/lucius-code-portrait-animated.gif"
+<<<<<<< HEAD
     alt="Naveen Ganesh — a code-carved portrait with PEACE IN OUR TIME, cyan and violet terminal details, and restrained red glitch effects."
+=======
+    alt="Naveen Ganesh's code-carved portrait with PEACE IN OUR TIME and restrained red glitch effects."
+>>>>>>> 3436f13 (Refine profile banner with red glitch animation)
     width="92%"
   />
 </div>
+
 
 ---
 
