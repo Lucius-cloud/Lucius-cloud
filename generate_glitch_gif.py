@@ -1,0 +1,113 @@
+"""Create a restrained, endlessly looping red-glitch GIF from the static banner.
+
+Run from the repository root:
+    python generate_glitch_gif.py
+Requires: Pillow (pip install Pillow)
+Input:  assets/lucius-code-portrait-static.png
+Output: assets/lucius-code-portrait-animated.gif
+"""
+from pathlib import Path
+import random
+from PIL import Image, ImageDraw, ImageEnhance
+
+ROOT = Path(__file__).resolve().parent
+ASSETS = ROOT / "assets"
+SOURCE = ASSETS / "lucius-code-portrait-static.png"
+OUTPUT = ASSETS / "lucius-code-portrait-animated.gif"
+
+WIDTH = 960
+FRAME_COUNT = 32                 # 32 x 160 ms = 5.12-second loop
+FRAME_DURATION_MS = 160
+PALETTE_COLORS = 96
+
+if not SOURCE.exists():
+    raise FileNotFoundError(
+        f"Missing {SOURCE}. Put your preferred static banner at this path first."
+    )
+
+base = Image.open(SOURCE).convert("RGB")
+height = round(base.height * WIDTH / base.width)
+base = base.resize((WIDTH, height), Image.Resampling.LANCZOS)
+
+# Glitch bursts are deliberately brief. The portrait and text never disappear;
+# only small horizontal slices shift and become red for a few frames.
+BURSTS = ((5, 8), (14, 16), (23, 26))
+
+def burst_intensity(frame_index: int) -> float:
+    intensity = 0.0
+    for start, end in BURSTS:
+        if start <= frame_index <= end:
+            midpoint = (start + end) / 2
+            radius = (end - start + 1) / 2
+            intensity = max(intensity, max(0.0, 1.0 - abs(frame_index - midpoint) / radius))
+    return intensity
+
+def make_frame(frame_index: int) -> Image.Image:
+    frame = base.copy()
+    intensity = burst_intensity(frame_index)
+    if intensity <= 0:
+        return frame
+
+    width, height = frame.size
+    rng = random.Random(4400 + frame_index)  # deterministic, stable looping pattern
+    draw = ImageDraw.Draw(frame)
+
+    # Very short red bars in different parts of the design.
+    count = 2 + round(5 * intensity)
+    for _ in range(count):
+        y = rng.randrange(max(1, int(height * 0.12)), max(2, int(height * 0.91)))
+        x = rng.randrange(15, width - 160)
+        bar_width = rng.randint(28, 160)
+        bar_end = min(width - 12, x + bar_width)
+        draw.line((x, y, bar_end, y), fill=(255, 24, 58), width=rng.choice((1, 1, 2)))
+        if intensity > 0.65 and rng.random() < 0.45:
+            y2 = min(height - 2, y + rng.choice((-3, -2, 2, 3)))
+            draw.line((x + 5, y2, min(bar_end, x + rng.randint(35, 100)), y2),
+                      fill=(116, 48, 255), width=1)
+
+    # A few thin image slices are displaced and red-tinted; no full-frame flicker.
+    slices = 1 + int(3 * intensity)
+    for _ in range(slices):
+        y = rng.randrange(max(1, int(height * 0.16)), max(2, int(height * 0.88)))
+        slice_h = rng.choice((1, 2, 3))
+        x1 = rng.randint(int(width * 0.12), int(width * 0.88))
+        x2 = min(width - 2, x1 + rng.randint(90, 300))
+        if x2 <= x1:
+            continue
+        patch = frame.crop((x1, y, x2, min(height, y + slice_h))).convert("RGB")
+        # Warm only this slice toward red, retaining the original image detail.
+        r, g, b = patch.split()
+        r = r.point(lambda v: min(255, int(v * 1.12 + 26)))
+        g = g.point(lambda v: int(v * 0.54))
+        b = b.point(lambda v: int(v * 0.60))
+        patch = Image.merge("RGB", (r, g, b))
+        dx = rng.choice((-1, 1)) * rng.randint(3, 10)
+        paste_x = max(0, min(width - patch.width, x1 + dx))
+        frame.paste(patch, (paste_x, y))
+
+    return frame
+
+frames = [make_frame(i) for i in range(FRAME_COUNT)]
+# Build a shared palette from the untouched first frame for stable colours.
+palette_source = base.quantize(colors=PALETTE_COLORS, method=Image.Quantize.MEDIANCUT, dither=Image.Dither.NONE)
+frames_p = [f.quantize(palette=palette_source, dither=Image.Dither.NONE) for f in frames]
+frames_p[0].save(
+    OUTPUT,
+    save_all=True,
+    append_images=frames_p[1:],
+    duration=FRAME_DURATION_MS,
+    loop=0,
+    optimize=True,
+    disposal=2,
+)
+
+check = Image.open(OUTPUT)
+assert check.info.get("loop") == 0, "GIF should loop forever"
+total_ms = 0
+for frame_no in range(check.n_frames):
+    check.seek(frame_no)
+    total_ms += check.info.get("duration", 0)
+assert 4800 <= total_ms <= 5400, f"Unexpected loop duration: {total_ms}ms"
+print(f"Created: {OUTPUT}")
+print(f"Size: {WIDTH}x{height}; encoded frames: {check.n_frames}; duration: {total_ms / 1000:.2f}s; loop: forever")
+print(f"File size: {OUTPUT.stat().st_size / 1024:.0f} KB")
