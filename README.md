@@ -1,6 +1,8 @@
 <div align="center">
-
-<img src="assets/systems-console.svg" alt="Naveen Ganesh — Systems Console" width="100%"/>
+  <img src="./assets/systems-console.svg"
+       alt="Naveen Ganesh — Systems Console"
+       width="100%" />
+</div>
 
 **AI SYSTEMS · APPLIED ML · DEVELOPER INFRASTRUCTURE**
 
