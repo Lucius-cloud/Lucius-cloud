@@ -59,13 +59,6 @@ A credential-manager API built around JWT sessions, AES-encrypted credential sto
 
 ---
 
-## `04 / WHAT I OPTIMIZE FOR`
-
-- Evidence before assumptions.
-- Measurement before optimization.
-- Systems that behave sensibly outside the happy path.
-- AI that can be evaluated, deployed, and understood.
-
 <div align="center">
   <br />
   <code>BUILD / MEASURE / ITERATE</code>
